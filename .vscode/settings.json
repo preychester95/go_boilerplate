@@ -1,0 +1,78 @@
+{
+  "files.associations": {
+    ".direnvrc": "shellscript",
+    ".envrc": "shellscript",
+    ".envrcvars": "shellscript",
+    ".example.envrcvars": "shellscript",
+    ".oci_image": "ini",
+  },
+
+  "files.exclude": {
+    "**/.git/**": true,
+    "**/.svn/**": true,
+    "**/.hg/**": true,
+    "**/CVS/**": true,
+    "**/.DS_Store": true,
+    "**/.direnv/**": true,
+    "**/.direnvrc": true,
+    "**/vendor/**": true,
+  },
+
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/.svn/**": true,
+    "**/.hg/**": true,
+    "**/CVS/**": true,
+    "**/.direnv/**": true,
+    "**/.direnvrc": true,
+    "**/vendor/**": true,
+  },
+
+  "search.exclude": {
+    "**/.direnv/**": true,
+    "**/.direnvrc": true,
+    "**/vendor/**": true,
+  },
+
+  "go.goroot": "${workspaceFolder}/.direnv/goroot",
+  "go.gopath": "${workspaceFolder}/.direnv/gopath",
+
+  "go.useLanguageServer": true,
+
+  "gopls": {
+      "gofumpt": true,
+      "staticcheck": true,
+  },
+
+  "[go]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+          "source.organizeImports": true,
+      },
+  },
+
+  "[go.mod]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+          "source.organizeImports": true,
+      },
+  },
+
+  "go.buildOnSave": "off",
+  "go.vetOnSave": "workspace",
+  "go.testOnSave": false,
+  "go.coverOnSave": false,
+
+  "go.lintOnSave": "workspace",
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": [
+    "--skip-dirs",
+    "./direnv",
+    "--presets",
+    "bugs,complexity,format,performance,unused",
+    "--max-issues-per-linter",
+    "0",
+    "--max-same-issues",
+    "0",
+  ],
+}

@@ -1,0 +1,62 @@
+layout_gvm() {
+        local go_version="${1}"
+
+        local direnv="${PWD}/.direnv"
+
+        local gvm="${GVM_ROOT}/bin/gvm"
+
+        local gvm_goroot="${GVM_ROOT}/gos/go${go_version}"
+        local gvm_gobin="${gvm_goroot}/bin/go"
+
+        if [[ ! -d "${gvm_goroot}" ]]; then
+            ${gvm} install go${go_version}
+        fi
+
+        export GOROOT="${gvm_goroot}"
+        export GOPATH="${direnv}/go-${go_version}"
+
+        ln -nfs "${gvm_goroot}" "${direnv}/goroot"
+        ln -nfs "${direnv}/go-${go_version}" "${direnv}/gopath"
+
+        (
+          if [ ! -d "${direnv}/go-${go_version}" ]; then
+            mkdir -p "${direnv}/go-${go_version}"
+          fi
+
+          if [ ! -f "${direnv}/go.mod" ]; then
+            cd "${direnv}"
+            ${gvm_gobin} mod init go.repository.empro.xyz/tools
+
+            export GO111MODULE="on"
+
+            ${gvm_gobin} get github.com/stamblerre/gocode
+            ${gvm_gobin} get github.com/uudashr/gopkgs/v2/cmd/gopkgs
+            ${gvm_gobin} get github.com/ramya-rao-a/go-outline
+            ${gvm_gobin} get github.com/acroca/go-symbols
+            ${gvm_gobin} get golang.org/x/tools/cmd/guru
+            ${gvm_gobin} get golang.org/x/tools/cmd/gorename
+            ${gvm_gobin} get github.com/fatih/gomodifytags
+            ${gvm_gobin} get github.com/haya14busa/goplay/cmd/goplay
+            ${gvm_gobin} get github.com/josharian/impl
+            ${gvm_gobin} get github.com/tylerb/gotype-live
+            ${gvm_gobin} get github.com/rogpeppe/godef
+            ${gvm_gobin} get github.com/zmb3/gogetdoc
+            ${gvm_gobin} get golang.org/x/tools/cmd/goimports
+            ${gvm_gobin} get github.com/sqs/goreturns
+            ${gvm_gobin} get winterdrache.de/goformat/goformat
+            ${gvm_gobin} get golang.org/x/lint/golint
+            ${gvm_gobin} get github.com/cweill/gotests/...
+            ${gvm_gobin} get honnef.co/go/tools/...
+            ${gvm_gobin} get github.com/golangci/golangci-lint/cmd/golangci-lint
+            ${gvm_gobin} get github.com/mgechev/revive
+            ${gvm_gobin} get golang.org/x/tools/gopls
+            ${gvm_gobin} get github.com/go-delve/delve/cmd/dlv
+            ${gvm_gobin} get github.com/davidrjenni/reftools/cmd/fillstruct
+            ${gvm_gobin} get github.com/godoctor/godoctor
+            ${gvm_gobin} get mvdan.cc/gofumpt
+            ${gvm_gobin} get mvdan.cc/gofumpt/gofumports
+          fi
+        )
+
+        export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}:${PATH}"
+}

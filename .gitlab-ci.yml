@@ -1,0 +1,164 @@
+default:
+  image: golang:1.16-alpine
+
+
+# rules
+
+.rules:merge_request:
+  rules:
+    - &rules_merge_request
+      if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(master|main|release\/\d+\.\d+\.\d+(-\d+)?)$/'
+      when: on_success
+
+.rules:push:
+  rules:
+    - &rules_push
+      if: '$CI_COMMIT_BRANCH =~ /^(master|main|release\/\d+\.\d+\.\d+(-\d+)?)$/'
+      when: on_success
+
+.rules:tag:
+  rules:
+    - &rules_tag
+      if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+(-\d+)?$/'
+      when: on_success
+
+.rules:merge_request_manual:
+  rules:
+    - <<: *rules_merge_request
+      when: manual
+
+.rules:push_manual:
+  rules:
+    - &rules_push_manual
+      <<: *rules_push
+      when: manual
+
+.rules:tag_manual:
+  rules:
+    - &rules_tag_manual
+      <<: *rules_tag
+      when: manual
+
+.rules:push_or_tag:
+  rules:
+    - *rules_push
+    - *rules_tag
+
+
+# stages
+
+stages:
+  - test
+  - build
+
+.stage:test:
+  stage: test
+  extends:
+    - .rules:merge_request
+
+.stage:build:
+  stage: build
+
+# pre stage
+
+.dependencies:
+  stage: .pre
+  allow_failure: false
+  artifacts:
+    paths:
+      - vendor
+    when: on_success
+
+dependencies:test:
+  extends:
+    - .dependencies
+    - .rules:merge_request
+  script:
+    - apk add git
+    - go mod vendor
+  interruptible: true
+
+dependencies:build:
+  extends:
+    - .dependencies
+    - .rules:push_or_tag
+  script:
+    - apk add git
+    - go mod vendor
+  interruptible: false
+
+
+# test stage
+
+.test:
+  extends:
+    - .stage:test
+  needs:
+    - job: dependencies:test
+      artifacts: true
+  allow_failure: false
+  interruptible: true
+
+lint:
+  extends:
+    - .test
+  before_script:
+    - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
+  script:
+    - |-
+      CGO_ENABLED=0 golangci-lint run \
+        --presets bugs,complexity,format,performance,unused \
+        --max-issues-per-linter 0 \
+        --max-same-issues 0 \
+        --timeout 5m \
+        ./...
+
+test:
+  extends:
+    - .test
+  variables:
+    JEST_JUNIT_SUITE_NAME: "{filename}"
+    JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+    JEST_JUNIT_CLASSNAME: "{classname}"
+    JEST_JUNIT_TITLE: "{title}"
+  before_script:
+    - apk add git
+    - go install -v gotest.tools/gotestsum@latest
+  script:
+    - |-
+      if CGO_ENABLED=0 /go/bin/gotestsum --junitfile junit.xml ./... --coverprofile=coverage.out; then
+        go tool cover -func coverage.out
+      else
+        go tool cover -func coverage.out | grep -E "^total:"
+        return 1
+      fi
+  coverage: /total\s*:\s*\(statements\)\s*([\d\.]+\%)/
+  artifacts:
+    reports:
+      junit: junit.xml
+
+
+# build stage
+
+.build:
+  extends:
+    - .stage:build
+  needs:
+    - job: dependencies:build
+      artifacts: true
+  script:
+    - export BUILD_MODULE
+    - mkdir -p ./dist
+    - |-
+      CGO_ENABLED=0 go build \
+        -ldflags "-X main.AppName=${APPLICATION_NAME} -X main.AppVersion=${APPLICATION_RELEASE}" \
+        -o ./dist/${APPLICATION_NAME} \
+        ./cmd/.
+    - "cp COPYRIGHT dist/ || :"
+    - "cp README.md dist/ || :"
+  artifacts:
+    paths:
+      - dist
+    when: on_success
+  allow_failure: false
+  interruptible: false

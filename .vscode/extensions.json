@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "rubymaniac.vscode-direnv",
+    "editorconfig.editorconfig",
+    "golang.go",
+    "vadimcn.vscode-lldb",
+    "gaborv.flatbuffers"
+  ],
+}
